@@ -1,33 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Staff Sales Dashboard</title>
+  <meta charset="UTF-8">
+  <title>Staff Dashboard | Mini-CRM</title>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <style>
-    body { font-family: Arial; background: #f4f6f8; padding: 40px; }
-    .card { background: white; padding: 20px; max-width: 800px; margin: auto; }
-    .lead { border-bottom: 1px solid #ccc; padding: 10px 0; }
-    input, select { margin: 5px 0; }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1f2937;
+    }
+
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 20px 30px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+
+    input, select {
+      padding: 8px;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .lead {
+      padding: 14px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .lead:last-child { border-bottom: none; }
+
+    .badge {
+      background: #e5e7eb;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    .login {
+      max-width: 400px;
+      margin: 80px auto;
+    }
   </style>
 </head>
 
 <body>
 
-<div class="card" id="loginCard">
-  <h2>Staff Login</h2>
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-  <p id="loginStatus"></p>
-</div>
+<header>
+  <h1>Staff Sales Dashboard</h1>
+</header>
 
-<div class="card" id="dashboard" style="display:none;">
-  <h2>Sales Pipeline</h2>
-  <div id="leads"></div>
+<div class="container">
+
+  <!-- LOGIN -->
+  <div class="card login" id="loginCard">
+    <h2>Staff Login</h2>
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p id="loginStatus"></p>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="card" id="dashboard" style="display:none;">
+    <h2>Sales Pipeline</h2>
+    <div id="leads"></div>
+  </div>
+
 </div>
 
 <script>
@@ -44,13 +128,11 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-/* LOGIN */
 function login() {
   auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(e => loginStatus.innerText = e.message);
+    .catch(e => loginStatus.textContent = e.message);
 }
 
-/* AUTH STATE */
 auth.onAuthStateChanged(user => {
   if (user) {
     loginCard.style.display = "none";
@@ -59,7 +141,6 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-/* REAL-TIME LEADS */
 function loadLeads() {
   db.collection("leads").orderBy("createdAt", "desc")
     .onSnapshot(snapshot => {
@@ -68,8 +149,9 @@ function loadLeads() {
         const l = doc.data();
         leads.innerHTML += `
           <div class="lead">
-            <b>${l.name}</b> (${l.email})<br>
-            Value: €${l.value}<br>
+            <strong>${l.name}</strong> — ${l.company || "N/A"}
+            <span class="badge">${l.stage}</span><br>
+            €${l.value} · ${l.email}<br>
             Stage:
             <select onchange="updateStage('${doc.id}', this.value)">
               ${["New","Contacted","Qualified","Proposal","Won","Lost"]
