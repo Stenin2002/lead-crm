@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sales Insights | Mini-CRM</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- CSS RESET -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+  </style>
+
+  <!-- APP STYLES -->
+  <style>
+    body {
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f1f5f9;
+      color: #1f2937;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f172a, #020617);
+      color: white;
+      padding: 22px 30px;
+    }
+
+    header h1 {
+      font-size: 22px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 22px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      margin-bottom: 14px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+      font-size: 18px;
+    }
+
+    .metric {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    .label {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .stage {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .stage:last-child {
+      border-bottom: none;
+    }
+
+    .badge {
+      background: #e5e7eb;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+
+    .muted {
+      color: #6b7280;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Sales Pipeline Insights</h1>
+</header>
+
+<div class="container">
+
+  <!-- KPI CARDS -->
+  <div class="grid">
+
+    <div class="card">
+      <h2>Total Pipeline Value</h2>
+      <div id="totalValue" class="metric">€0</div>
+      <div class="label">Excluding lost deals</div>
+    </div>
+
+    <div class="card">
+      <h2>Total Active Leads</h2>
+      <div id="activeLeads" class="metric">0</div>
+      <div class="label">Currently in pipeline</div>
+    </div>
+
+    <div class="card">
+      <h2>New Leads (24h)</h2>
+      <div id="last24h" class="metric">0</div>
+      <div class="label">Created in last 24 hours</div>
+    </div>
+
+  </div>
+
+  <!-- STAGE DISTRIBUTION -->
+  <div class="card" style="margin-top:30px;">
+    <h2>Stage Distribution</h2>
+    <div id="stages"></div>
+  </div>
+
+</div>
+
+<script>
+/* ========== FIREBASE CONFIG (REPLACE THIS) ========== */
+const firebaseConfig = {
+    apiKey: "AIzaSyAOlXmtbxpPQtB7tZJAW7mo448QMJ4Pn_4",
+    authDomain: "mini-crm-9083a.firebaseapp.com",
+    projectId: "mini-crm-9083a",
+    storageBucket: "mini-crm-9083a.firebasestorage.app",
+    messagingSenderId: "529154007688",
+    appId: "1:529154007688:web:9a6c18a9c6668a38c7753d"
+};
+/* =================================================== */
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ========== REAL-TIME INSIGHTS ========== */
+db.collection("leads").onSnapshot(snapshot => {
+  let stageCounts = {};
+  let totalValue = 0;
+  let activeLeads = 0;
+  let last24h = 0;
+
+  const now = new Date();
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  snapshot.forEach(doc => {
+    const l = doc.data();
+
+    // Stage count
+    stageCounts[l.stage] = (stageCounts[l.stage] || 0) + 1;
+
+    // Pipeline value
+    if (l.stage !== "Lost") {
+      totalValue += l.value || 0;
+      activeLeads++;
+    }
+
+    // Last 24 hours
+    if (l.createdAt && l.createdAt.toDate() > dayAgo) {
+      last24h++;
+    }
+  });
+
+  // Update KPIs
+  document.getElementById("totalValue").innerText = `€${totalValue}`;
+  document.getElementById("activeLeads").innerText = activeLeads;
+  document.getElementById("last24h").innerText = last24h;
+
+  // Stage distribution
+  const stagesEl = document.getElementById("stages");
+  stagesEl.innerHTML = "";
+
+  Object.keys(stageCounts).forEach(stage => {
+    stagesEl.innerHTML += `
+      <div class="stage">
+        <span>${stage}</span>
+        <span class="badge">${stageCounts[stage]}</span>
+      </div>
+    `;
+  });
+});
+</script>
+
+</body>
+</html>
