@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Customer Lead Form</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body { font-family: Arial; background: #f4f6f8; padding: 40px; }
+    .card { background: white; padding: 20px; max-width: 500px; margin: auto; }
+    input, textarea { width: 100%; padding: 8px; margin: 8px 0; }
+    button { padding: 10px; }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Sales Enquiry</h2>
+
+  <input id="leadName" placeholder="Name">
+  <input id="leadEmail" placeholder="Email">
+  <input id="company" placeholder="Company">
+  <input id="value" type="number" placeholder="Estimated Value">
+  <textarea id="message" placeholder="Message"></textarea>
+
+  <button onclick="submitLead()">Submit</button>
+  <p id="status"></p>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAOlXmtbxpPQtB7tZJAW7mo448QMJ4Pn_4",
+    authDomain: "mini-crm-9083a.firebaseapp.com",
+    projectId: "mini-crm-9083a",
+    storageBucket: "mini-crm-9083a.firebasestorage.app",
+    messagingSenderId: "529154007688",
+    appId: "1:529154007688:web:9a6c18a9c6668a38c7753d"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function submitLead() {
+  const name = leadName.value.trim();
+  const email = leadEmail.value.trim();
+
+  if (!name || !email) {
+    status.innerText = "Name and Email required";
+    return;
+  }
+
+  db.collection("leads").add({
+    name,
+    email,
+    company: company.value,
+    value: Number(value.value) || 0,
+    message: message.value,
+    stage: "New",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => status.innerText = "Submitted successfully")
+  .catch(e => status.innerText = e.message);
+}
+</script>
+
+</body>
+</html>
