@@ -1,33 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Customer Lead Form</title>
+  <meta charset="UTF-8">
+  <title>Sales Enquiry | Mini-CRM</title>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <style>
-    body { font-family: Arial; background: #f4f6f8; padding: 40px; }
-    .card { background: white; padding: 20px; max-width: 500px; margin: auto; }
-    input, textarea { width: 100%; padding: 8px; margin: 8px 0; }
-    button { padding: 10px; }
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1f2937, #111827);
+      color: white;
+      padding: 48px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 36px;
+    }
+
+    header p {
+      margin-top: 8px;
+      color: #cbd5e1;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: -40px auto 60px;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 28px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 22px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      display: block;
+      margin-top: 14px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+    }
+
+    textarea { resize: vertical; }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .status {
+      margin-top: 14px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .error { color: #b91c1c; }
+    .success { color: #047857; }
+
+    footer {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 40px;
+    }
   </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h2>Sales Enquiry</h2>
+<header>
+  <h1>Sales Enquiry</h1>
+  <p>Tell us about your requirements and our team will be in touch</p>
+</header>
 
-  <input id="leadName" placeholder="Name">
-  <input id="leadEmail" placeholder="Email">
-  <input id="company" placeholder="Company">
-  <input id="value" type="number" placeholder="Estimated Value">
-  <textarea id="message" placeholder="Message"></textarea>
+<div class="container">
+  <div class="card">
+    <h2>Contact Details</h2>
 
-  <button onclick="submitLead()">Submit</button>
-  <p id="status"></p>
+    <label>Full Name</label>
+    <input id="leadName">
+
+    <label>Email Address</label>
+    <input id="leadEmail">
+
+    <label>Company</label>
+    <input id="company">
+
+    <label>Estimated Deal Value (€)</label>
+    <input id="value" type="number">
+
+    <label>Message</label>
+    <textarea id="message" rows="4"></textarea>
+
+    <button id="submitBtn" onclick="submitLead()">Submit Enquiry</button>
+    <div id="publicStatus" class="status"></div>
+  </div>
 </div>
+
+<footer>
+  Internal staff access available on request
+</footer>
 
 <script>
 const firebaseConfig = {
@@ -45,11 +161,18 @@ const db = firebase.firestore();
 function submitLead() {
   const name = leadName.value.trim();
   const email = leadEmail.value.trim();
+  const status = publicStatus;
+
+  status.textContent = "";
+  status.className = "status";
 
   if (!name || !email) {
-    status.innerText = "Name and Email required";
+    status.textContent = "Name and Email are required.";
+    status.classList.add("error");
     return;
   }
+
+  submitBtn.disabled = true;
 
   db.collection("leads").add({
     name,
@@ -60,8 +183,16 @@ function submitLead() {
     stage: "New",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   })
-  .then(() => status.innerText = "Submitted successfully")
-  .catch(e => status.innerText = e.message);
+  .then(() => {
+    status.textContent = "Thank you. Your enquiry has been submitted.";
+    status.classList.add("success");
+    leadName.value = leadEmail.value = company.value = value.value = message.value = "";
+  })
+  .catch(err => {
+    status.textContent = err.message;
+    status.classList.add("error");
+  })
+  .finally(() => submitBtn.disabled = false);
 }
 </script>
 
