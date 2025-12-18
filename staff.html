@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Staff Sales Dashboard</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <style>
+    body { font-family: Arial; background: #f4f6f8; padding: 40px; }
+    .card { background: white; padding: 20px; max-width: 800px; margin: auto; }
+    .lead { border-bottom: 1px solid #ccc; padding: 10px 0; }
+    input, select { margin: 5px 0; }
+  </style>
+</head>
+
+<body>
+
+<div class="card" id="loginCard">
+  <h2>Staff Login</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <p id="loginStatus"></p>
+</div>
+
+<div class="card" id="dashboard" style="display:none;">
+  <h2>Sales Pipeline</h2>
+  <div id="leads"></div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAOlXmtbxpPQtB7tZJAW7mo448QMJ4Pn_4",
+    authDomain: "mini-crm-9083a.firebaseapp.com",
+    projectId: "mini-crm-9083a",
+    storageBucket: "mini-crm-9083a.firebasestorage.app",
+    messagingSenderId: "529154007688",
+    appId: "1:529154007688:web:9a6c18a9c6668a38c7753d"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+/* LOGIN */
+function login() {
+  auth.signInWithEmailAndPassword(email.value, password.value)
+    .catch(e => loginStatus.innerText = e.message);
+}
+
+/* AUTH STATE */
+auth.onAuthStateChanged(user => {
+  if (user) {
+    loginCard.style.display = "none";
+    dashboard.style.display = "block";
+    loadLeads();
+  }
+});
+
+/* REAL-TIME LEADS */
+function loadLeads() {
+  db.collection("leads").orderBy("createdAt", "desc")
+    .onSnapshot(snapshot => {
+      leads.innerHTML = "";
+      snapshot.forEach(doc => {
+        const l = doc.data();
+        leads.innerHTML += `
+          <div class="lead">
+            <b>${l.name}</b> (${l.email})<br>
+            Value: €${l.value}<br>
+            Stage:
+            <select onchange="updateStage('${doc.id}', this.value)">
+              ${["New","Contacted","Qualified","Proposal","Won","Lost"]
+                .map(s => `<option ${s===l.stage?"selected":""}>${s}</option>`)}
+            </select>
+          </div>
+        `;
+      });
+    });
+}
+
+function updateStage(id, stage) {
+  db.collection("leads").doc(id).update({ stage });
+}
+</script>
+
+</body>
+</html>
