@@ -4,16 +4,19 @@
   <meta charset="UTF-8">
   <title>Staff Dashboard | Mini-CRM</title>
 
-  <!-- Firebase -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
+  <!-- CSS RESET -->
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+  </style>
 
+  <!-- APP STYLES -->
+  <style>
     body {
-      margin: 0;
       font-family: "Segoe UI", Roboto, Arial, sans-serif;
       background: #f1f5f9;
       color: #1f2937;
@@ -22,49 +25,60 @@
     header {
       background: #0f172a;
       color: white;
-      padding: 20px 30px;
+      padding: 18px 30px;
     }
 
     header h1 {
-      margin: 0;
       font-size: 22px;
     }
 
     .container {
       max-width: 1100px;
-      margin: 30px auto;
+      margin: 40px auto;
       padding: 0 20px;
     }
 
     .card {
       background: white;
       border-radius: 10px;
-      padding: 24px;
+      padding: 26px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
 
     h2 {
-      margin-top: 0;
+      margin-bottom: 16px;
       border-bottom: 2px solid #e5e7eb;
       padding-bottom: 8px;
     }
 
     input, select {
-      padding: 8px;
-      margin-top: 6px;
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
       border-radius: 6px;
       border: 1px solid #d1d5db;
+      font-size: 14px;
     }
 
     button {
-      margin-top: 12px;
       padding: 10px 16px;
       background: #2563eb;
       color: white;
       border: none;
       border-radius: 6px;
-      cursor: pointer;
+      font-size: 14px;
       font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .center {
+      max-width: 420px;
+      margin: 100px auto;
     }
 
     .lead {
@@ -72,9 +86,12 @@
       border-bottom: 1px solid #e5e7eb;
     }
 
-    .lead:last-child { border-bottom: none; }
+    .lead:last-child {
+      border-bottom: none;
+    }
 
     .badge {
+      display: inline-block;
       background: #e5e7eb;
       border-radius: 12px;
       padding: 4px 10px;
@@ -82,9 +99,16 @@
       margin-left: 8px;
     }
 
-    .login {
-      max-width: 400px;
-      margin: 80px auto;
+    .muted {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
     }
   </style>
 </head>
@@ -97,24 +121,37 @@
 
 <div class="container">
 
+  <!-- LOADING STATE (SHOWN FIRST) -->
+  <div class="card center" id="loading">
+    <h2>Loading</h2>
+    <p class="muted">Checking authentication status…</p>
+  </div>
+
   <!-- LOGIN -->
-  <div class="card login" id="loginCard">
+  <div class="card center" id="loginCard" style="display:none;">
     <h2>Staff Login</h2>
+
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
+
     <button onclick="login()">Login</button>
-    <p id="loginStatus"></p>
+    <p id="loginStatus" class="muted"></p>
   </div>
 
   <!-- DASHBOARD -->
   <div class="card" id="dashboard" style="display:none;">
-    <h2>Sales Pipeline</h2>
+    <div class="top-bar">
+      <h2>Sales Pipeline</h2>
+      <button onclick="logout()">Logout</button>
+    </div>
+
     <div id="leads"></div>
   </div>
 
 </div>
 
 <script>
+/* ========== FIREBASE CONFIG (REPLACE THIS) ========== */
 const firebaseConfig = {
     apiKey: "AIzaSyAOlXmtbxpPQtB7tZJAW7mo448QMJ4Pn_4",
     authDomain: "mini-crm-9083a.firebaseapp.com",
@@ -123,39 +160,57 @@ const firebaseConfig = {
     messagingSenderId: "529154007688",
     appId: "1:529154007688:web:9a6c18a9c6668a38c7753d"
 };
+/* =================================================== */
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+/* LOGIN */
 function login() {
+  loginStatus.textContent = "";
   auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(e => loginStatus.textContent = e.message);
+    .catch(err => loginStatus.textContent = err.message);
 }
 
+/* LOGOUT */
+function logout() {
+  auth.signOut();
+}
+
+/* AUTH STATE (THIS PREVENTS FLASH) */
 auth.onAuthStateChanged(user => {
+  loading.style.display = "none";
+
   if (user) {
     loginCard.style.display = "none";
     dashboard.style.display = "block";
     loadLeads();
+  } else {
+    dashboard.style.display = "none";
+    loginCard.style.display = "block";
   }
 });
 
+/* REAL-TIME PIPELINE */
 function loadLeads() {
-  db.collection("leads").orderBy("createdAt", "desc")
+  db.collection("leads")
+    .orderBy("createdAt", "desc")
     .onSnapshot(snapshot => {
       leads.innerHTML = "";
+
       snapshot.forEach(doc => {
         const l = doc.data();
         leads.innerHTML += `
           <div class="lead">
-            <strong>${l.name}</strong> — ${l.company || "N/A"}
+            <strong>${l.name}</strong>
             <span class="badge">${l.stage}</span><br>
-            €${l.value} · ${l.email}<br>
+            <span class="muted">${l.email} · €${l.value}</span><br><br>
             Stage:
             <select onchange="updateStage('${doc.id}', this.value)">
               ${["New","Contacted","Qualified","Proposal","Won","Lost"]
-                .map(s => `<option ${s===l.stage?"selected":""}>${s}</option>`)}
+                .map(s => `<option ${s===l.stage?"selected":""}>${s}</option>`)
+                .join("")}
             </select>
           </div>
         `;
@@ -163,6 +218,7 @@ function loadLeads() {
     });
 }
 
+/* UPDATE STAGE */
 function updateStage(id, stage) {
   db.collection("leads").doc(id).update({ stage });
 }
